@@ -1,0 +1,146 @@
+﻿@model List<CustomerSurveyQuestionViewModel>
+@{
+    ViewData["Title"] = "Customer Survey Form";
+    var questions = new List<string> { "Question 1" };
+    var radioAnswers = new List<string>
+    {
+        "Very Good",
+        "Good",
+        "Medium",
+        "Bad",
+        "Very Bad"
+    };
+    int i = 0;
+
+    var customerSurvey = (ViewBag.CustomerSurvey as CustomerSurveyViewModel);
+}
+
+<div class="mx-0 mx-sm-auto">
+    <div class="card">
+        <div class="card-body">
+            <div class="text-center">
+                <i class="far fa-file-alt fa-4x mb-3 text-primary"></i>
+                <p>
+                    <h1>Customer Survey Form</h1>
+
+                </p>
+                <p>
+                    Have some ideas how to improve our product?
+                    <strong>Give us your feedback.</strong>
+                </p>
+            </div>
+
+            <hr />
+
+            <form id="surveyForm" class="px-4" action="">
+
+                @foreach(var question in Model)
+                {
+                    if(question == null)
+                    {
+                        continue;
+                    }
+                    int j = 0;
+                    var existingAnswer = customerSurvey?.CustomerSurveyAnswers?.FirstOrDefault(x => x.QuestionId == question.Id);
+
+                    <div class="questionSeparator">
+                        <p questionId="@question.Id" orderNo="@question.OrderNo"><strong>@question.Question</strong></p>
+
+                        @if(question.Type == 1)
+                        {
+                            @foreach(var radioAnswer in radioAnswers)
+                            {
+                                @*var existingAnswer = customerSurvey?.CustomerSurveyAnswers?.FirstOrDefault(x => x.Answer == $"q{i}a{j}");*@
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input"
+                                    @(existingAnswer?.Answer == $"q{question.Id}a{j}" ? "checked" : "")
+                                    type="radio"
+                                           name="question@(question.Id)"
+                                           id="q@(question.Id)a@(j)"
+                                    @(customerSurvey != null ? "disabled" : "")
+                                    />
+                                    <label class="form-check-label" for="q@(question.Id)a@(j)">
+                                        @radioAnswer
+                                    </label>
+                                </div>
+                                j++;
+                            }
+                        }
+                        else
+                        {
+                            <textarea 
+                            @(customerSurvey != null ? "disabled" : "")
+                                      id="q@(question.Id)a@(j)"
+                            class="form-control" 
+                            rows="3"
+                            title="@question.Question"
+                            placeholder="Write here">@existingAnswer?.AnswerText</textarea>
+                        }
+
+                    </div>
+                    i++;
+                }
+
+            </form>
+        </div>
+        <div class="card-footer text-end">
+            @if(customerSurvey == null)
+            {
+                <button type="button" onclick="$('#surveyForm').submit();" class="btn btn-primary">Submit</button>
+            }
+            else
+            {
+                <p><strong>The form for the quote is already submitted.</strong></p>
+            }
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function() {
+        $("#surveyForm").submit(function () {
+            var customerSurveyAnswers = [];
+            $('#surveyForm').find("input[type=radio]:checked")
+                .each(function (i, e) {
+                    const temp = {
+                        answerText: $('~label', e).text().trim(),
+                        answer: $(e).attr("id"),
+                        questionId: $(e).parent().siblings("p[questionId]").attr("questionId"),
+                        orderNo: $(e).parent().siblings("p[orderNo]").attr("orderNo")
+                    }
+                    customerSurveyAnswers.push(temp);
+                });
+
+            $('#surveyForm').find("textarea")
+                .each(function (i, e) {
+                    debugger;
+                    const temp = {
+                        answerText: $(e).val().trim(),
+                        answer: $(e).attr("id"),
+                        questionId: $(e).siblings("p[questionId]").attr("questionId"),
+                        orderNo: $(e).siblings("p[orderNo]").attr("orderNo")
+                    }
+                    customerSurveyAnswers.push(temp);
+                });
+
+            debugger;
+
+            const data = {
+                quoteId: @(ViewBag.QuoteId),
+                customerId: @(ViewBag.CustomerId),
+                customerSurveyAnswers
+            }
+
+            var jqxhr = $.post('api/Save/', data)
+                .done(function () {
+                    var loc = jqxhr.getResponseHeader('Location');
+                    var a = $('<a/>', { href: loc, text: loc });
+                    $('#message').html(a);
+                })
+                .fail(function () {
+                    $('#message').html("Error posting the update.");
+                });
+            return false
+        });
+    })
+</script>
